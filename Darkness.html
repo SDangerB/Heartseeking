@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Darkness</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/simplex-noise/2.4.0/simplex-noise.min.js"></script>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background-color: #f4f4f4;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+        transition: background-color 1s, color 1s;
+    }
+
+    .dark-mode {
+        background-color: black;
+        color: red;
+    }
+
+    #headerText {
+        font-size: 18px;
+        margin-right: 4px;
+        transform: translateY(-1px);
+    }
+
+    .choiceContainer {
+        text-align: center;
+    }
+
+    .dropdown {
+        position: relative;
+        display: inline-block;
+        margin-right: 5px;
+        margin-left: 8px;
+    }
+
+    .dropdown-button {
+        background-color: white;
+        border: 1px solid #ccc;
+        padding: 10px;
+        cursor: pointer;
+        min-width: 108px;
+        border-radius: 4px; /* Optional: Rounded corners */
+    }
+
+    .dropdown-content {
+        display: none;
+        position: absolute;
+        bottom: 100%; /* Position the dropdown above the button */
+        left: 0;
+        background-color: white;
+        border: 1px solid #ccc;
+        z-index: 1;
+        min-width: 127px;
+        max-height: 300px; /* Increase height */
+        overflow: hidden; /* Hide scrollbar */
+        border-radius: 4px; /* Optional: Rounded corners */
+    }
+
+    .dropdown-content div {
+        padding: 10px;
+        cursor: pointer;
+        color: black;
+        background-color: white;
+        font-size: 18px;
+    }
+
+    .dropdown-content div:hover {
+        background-color: rgb(192, 192, 192);
+        color: black;
+    }
+
+    @keyframes shake {
+        0% {
+            transform: translate(1px, 1px) rotate(0deg);
+        }
+
+        10% {
+            transform: translate(-1px, -2px) rotate(-1deg);
+        }
+
+        20% {
+            transform: translate(-3px, 0px) rotate(1deg);
+        }
+
+        30% {
+            transform: translate(3px, 2px) rotate(0deg);
+        }
+
+        40% {
+            transform: translate(1px, -1px) rotate(1deg);
+        }
+
+        50% {
+            transform: translate(-1px, 2px) rotate(-1deg);
+        }
+
+        60% {
+            transform: translate(-3px, 1px) rotate(0deg);
+        }
+
+        70% {
+            transform: translate(3px, 1px) rotate(-1deg);
+        }
+
+        80% {
+            transform: translate(-1px, -1px) rotate(1deg);
+        }
+
+        90% {
+            transform: translate(1px, 2px) rotate(0deg);
+        }
+
+        100% {
+            transform: translate(1px, -2px) rotate(-1deg);
+        }
+    }
+
+    .dropdown-content div.in-love {
+        color: red;
+        background-color: black;
+        animation: shake 0.3s infinite;
+    }
+
+    .dropdown-content div.so-far-away {
+        animation: shake 0.1s infinite;
+        color: red;
+        background-color: black;
+    }
+
+    .dropdown-button.selected {
+        background-color: white;
+        color: black;
+        transition: background-color 1s ease, color 1s ease, font-weight 1s ease;
+    }
+
+    #checkButton {
+        background-color: transparent;
+        border: none;
+        color: black;
+        padding: 7px 10px;
+        font-size: 18px;
+        transition: 3s;
+        cursor: crosshair;
+        transform: translateY(2px);
+        z-index: 20;
+        width: 120px; /*Sets a fixed width*/
+    }
+
+    #checkButton:hover {
+        background-color: black;
+        color: white;
+    }
+
+    .dark-mode #checkButton {
+        color: white;
+    }
+
+    #checkButton.hidden {
+        opacity: 0;
+        transition: opacity 0.5s ease;
+    }
+
+    #checkButton.visible {
+        opacity: 1;
+        transition: opacity 0.8s ease;
+    }
+
+    #checkButton.shaking {
+        animation:shake 0.5s infinite;
+    }
+
+    #outputText {
+        position: absolute;
+        top: 53%;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 18px;
+        opacity: 0;
+        transition: opacity 0.3s ease-in-out;
+        text-align: center; /* Center-justify text horizontally */
+        display: flex;
+        justify-content: center; /* Center horizontally within the container */
+        align-items: center; /* Center vertically within the container */
+        flex-direction: column; /* Ensure text is in column direction if it wraps */
+        width: 100%; /* Ensure the container takes full width to handle centering */
+        max-width: 90vw; /* Adjust as needed to avoid overflow */
+    }
+
+
+</style>
+</head>
+<body>
+    <div id="headerText">You are</div>
+
+    <div class="choiceContainer">
+        <div class="dropdown">
+            <div class="dropdown-button">...</div>
+            <div class="dropdown-content"></div>
+        </div>
+        <button id="checkButton">Deliberate</button>
+    </div>
+
+    <div id="outputText"></div>
+
+<script>
+    const allOptions = ['Alive?', 'Dead?', 'Asleep?', 'Lonely?', 'Hungry?', 'Dreaming?'];
+    const finalOptions = ['...', 'in Love.', 'so far away.'];
+    let removedOptions = [];
+
+    function populateDropdown() {
+        const dropdownContent = document.querySelector('.dropdown-content');
+        dropdownContent.innerHTML = ''; // Clear existing options
+
+        allOptions.forEach(option => {
+            if (!removedOptions.includes(option)) {
+                const optionDiv = document.createElement('div');
+                optionDiv.textContent = option;
+                optionDiv.dataset.value = option;
+
+                if (option === 'in Love.') {
+                    optionDiv.classList.add('in-love');
+                }
+
+                dropdownContent.appendChild(optionDiv);
+            }
+        });
+
+        // Re-attach event listeners for dynamically added options
+        dropdownContent.querySelectorAll('div').forEach(item => {
+            item.addEventListener('click', function () {
+                const button = document.querySelector('.dropdown-button');
+                button.textContent = this.textContent;
+                button.classList.add('selected');
+                document.querySelector('.dropdown-content').style.display = 'none';
+            });
+        });
+    }
+
+    // Initial population
+    populateDropdown();
+
+    document.querySelector('.dropdown-button').addEventListener('click', function () {
+        const dropdownContent = document.querySelector('.dropdown-content');
+        dropdownContent.style.display = dropdownContent.style.display === 'block' ? 'none' : 'block';
+    });
+
+    document.getElementById('checkButton').addEventListener('click', function () {
+        const selectedOption = document.querySelector('.dropdown-button').textContent;
+        const outputText = document.getElementById('outputText');
+
+        //Checks if clicked while 'burn'
+        if (selectedOption === "so far away.") {
+            window.location.href = "meow/Seeking.html";
+            return;
+        }
+
+        //List of descriptions
+        const sentences = {
+            'Alive?': "You don't have a pulse.",
+            'Dead?': "You don't feel dead. The dead don't deliberate.",
+            'Asleep?': "You're restless. You can't fathom sleeping. You're not sure if you've ever slept.",
+            'Lonely?': "...You're lonely enough to cry.",
+            'Hungry?': "You could eat the world, if it'd hold still and let you.",
+            'Dreaming?': "Maybe you're dreaming. You feel like you're in a haze. You feel like you're missing something.",
+            'in Love.': "moo",
+            'so far away.': "meow!"
+        };
+
+        //If we chose '...' do nothing
+        if (selectedOption === '...') {
+            return;
+        }
+
+        //shit happens when we choose 'in love'
+        if (selectedOption === 'in Love.') {
+            document.querySelector('.dropdown-button.selected').style.transition = 'background-color 1s ease, color 1s ease, font-weight 1s ease';
+            setTimeout(() => {
+                document.querySelector('.dropdown-button.selected').style.backgroundColor = 'black';
+                document.querySelector('.dropdown-button.selected').style.color = 'red';
+                document.querySelector('.dropdown-button.selected').style.fontWeight = 'bold';
+            }, 0);
+            outputText.style.opacity = '0';
+            updateForInLove();
+            return;
+        }
+
+        //Makes the description text fade out/in and update
+        const sentence = sentences[selectedOption] || "Error, meow! no desc available!";
+        if (outputText.style.opacity === '0') {
+            outputText.textContent = sentence;
+            outputText.style.opacity = '1';
+        } else {
+            outputText.style.opacity = '0';
+            setTimeout(function () {
+                outputText.textContent = sentence;
+                outputText.style.opacity = '1';
+            }, 350);
+        }
+        //Makes it always go back to '...' after you pick one of the normal options
+        updateDropdownOptions(selectedOption);
+        //document.querySelector('.dropdown-button').textContent = '...';
+    });
+
+    //Function for changing list of options
+    function updateDropdownOptions(selectedOption) {
+        removedOptions.push(selectedOption); //Updates array
+
+        const newOptions = allOptions.filter(option => option !== selectedOption && !removedOptions.includes(option));
+        const dropdownContent = document.querySelector('.dropdown-content');
+
+        dropdownContent.innerHTML = '';
+
+        newOptions.forEach(option => {
+            const optionDiv = document.createElement('div');
+            optionDiv.textContent = option;
+            optionDiv.dataset.value = option;
+
+            if (option === 'in Love.') {
+                optionDiv.classList.add('in-love');
+            }
+            dropdownContent.appendChild(optionDiv);
+        });
+
+            //when we have no options left, in love appears
+        if (newOptions.length === 0) {
+            const inLoveOption = document.createElement('div');
+            inLoveOption.textContent = 'in Love.';
+            inLoveOption.classList.add('in-love');
+            dropdownContent.appendChild(inLoveOption);
+        }
+
+        // Re-attach event listeners for dynamically added options
+        dropdownContent.querySelectorAll('div').forEach(item => {
+            item.addEventListener('click', function () {
+                const button = document.querySelector('.dropdown-button');
+                button.textContent = this.textContent;
+                button.classList.add('selected');
+                button.dataset.value = this.dataset.value; //Update the dataset value
+                document.querySelector('.dropdown-content').style.display = 'none';
+
+                //Disable dropdown if 'so far away.' is selected
+                if (this.textContent === 'so far away.') {
+                    document.querySelector('.dropdown-button').style.pointerEvents = 'none';
+                }
+
+                if (this.textContent === 'in Love.') {
+                    button.style.animation = 'shake 0.3s infinite';
+                    button.style.color = 'red';
+                    button.style.backgroundColor = 'black';
+                    button.style.fontWeight = 'bold';
+                } else if (this.textContent === 'so far away.') {
+                    button.style.animation = 'shake 0.1s infinite';
+                    button.style.color = 'red';
+                    button.style.backgroundColor = 'black';
+                } else {
+                    //Reset styles for other options
+                    button.style.animation = '';
+                    button.style.color = 'black';
+                    button.style.backgroundColor = 'white';
+                    button.style.fontWeight = 'normal';
+                }
+            });
+        });
+    }
+
+    function updateForInLove() {
+        //Update button text
+        const checkButton = document.getElementById('checkButton');
+
+        //Fade out current button text
+        checkButton.classList.add('hidden');
+        //Wait 1s while invisible, then fade in new button text
+        setTimeout(() => {
+            //Change button text
+            checkButton.textContent = 'Burn';
+            //Ensure button is visible
+            checkButton.classList.remove('hidden');
+            checkButton.classList.add('visible');
+            //Starts shaking
+            checkButton.classList.add('shaking');
+        }, 4000);
+
+
+        //Activates dark mode :3
+        document.body.classList.add('dark-mode');
+
+        //Add "so far away" option
+        const dropdownContent = document.querySelector('.dropdown-content');
+        dropdownContent.innerHTML = '';
+        const seeHerOption = document.createElement('div');
+        seeHerOption.textContent = 'so far away.';
+        seeHerOption.classList.add('so-far-away');
+        dropdownContent.appendChild(seeHerOption);
+
+        //Re-attach event listeners for added options
+        dropdownContent.querySelectorAll('div').forEach(item => {
+            item.addEventListener('click', function () {
+                const button = document.querySelector('.dropdown-button');
+                button.textContent = this.textContent;
+                button.classList.add('selected');
+                document.querySelector('.dropdown-content').style.display = 'none';
+            });
+        });
+    }
+</script>
+</body>
+</html>
