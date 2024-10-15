@@ -56,11 +56,35 @@
         text-align: left;
         position: fixed;
         bottom: 0%;
-		right: 0%;
+		right: 1%;
         z-index: 20;
         margin-bottom: 0px;
         margin-top: 0px;
+		width: 200px;
+		white-space: nowrap;
     }
+
+	.upgrade-button {
+		animation: slideIn 0.5s forwards;
+		margin: 0px 0;
+		position: relative;
+		transform: translateX(100%); /*Start offscreen*/
+		right: 0;
+	}
+
+	/*CSS for slide-in animation for upgrade buttons*/
+	@keyframes slideIn {
+	from {
+		transform: translateX(100%);
+		opacity: 0;
+	}
+		to {
+		transform: translateX(0);
+		opacity: 1;
+		}
+	}
+
+
 
 	/*Distance countdown stuff*/
     .info {
@@ -313,27 +337,7 @@
 		animation: mildShakeDown 1s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 	}
 
-	/*CSS for slide-in animation for upgrade buttons*/
-	@keyframes slideIn {
-		from {
-			transform: translateX(100%);
-			opacity: 0;
-		}
-		to {
-			transform: translateX(0);
-			opacity: 1;
-		}
-	}
 
-	.upgrade-button {
-		animation:slideIn 0.5s forwards;
-		margin: 10px 0;
-	}
-
-	.upgradeButtons .disabled {
-		background-color: grey;
-		cursor: not-allowed;
-	}
 </style>
 </head>
 
@@ -382,17 +386,12 @@
 		</div> <!--Last one will be called Obsess or smth later, cheat button rn-->
 
 		<div class="upgradeButtons">
-		    <button id="buyUpgradeBtn" class="btn">Buy an Upgrade</button>
-		<!--this might be removed or replaced
-			<button class="btn" onclick="upgradeStat(1, 0.05)">Passive Speed: <span id="passiveCost">100</span></button><br />
-			<button class="btn" onclick="upgradeStat(2, 0.05)">Burn Speed: <span id="burnCost">100</span></button><br />
-			<button class="btn" onclick="upgradeStat(3, 0.1)">Focus Regen: <span id="regenCost">100</span></button><br />
-			<button class="btn" onclick="upgradeStat(4, 0.1)">Focus Loss Efficiency: <span id="efficiencyCost">100</span></button><br />
-			<button class="btn" onclick="upgradeStat(5, 10)">Increase Max Focus: <span id="maxfocusCost">100</span></button><br />
-			<button class="btn" onclick="upgradeStat(6, 0.1)">Burn Harder: <span id="burnharderCost">100</span></button><br />
-			<button class="btn" onclick="upgradeStat(7, 0.2)">Climb Faster: <span id="climbCost">100</span></button><br />
-			<button class="btn" onclick="upgradeStat(8, 0.2)">Dive Faster: <span id="diveCost">100</span></button><br />
-		-->
+			<div id="newUpgradeContainer"></div> 
+		    <button id="buyUpgradeBtn" class="btn">Buy an Upgrade: 100</button>
+		</div>
+
+		<div style="position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%); color: white; font-size: 14px; text-align: center; white-space: nowrap; font-family: 'Fira Code', monospace;">
+			v0.06: Random Upgrade System
 		</div>
 	</div>
 
@@ -404,8 +403,7 @@
 		<p>Extra Focus Regen: <span id="focusRegen">0</span></p>
 		<p>Focus Efficiency: <span id="focusEfficiency">0</span></p>
 		<p>Extra Focus: <span id="extraFocus">0</span></p>
-		<p>Extra Burn Focus Loss: <span id="burnHarderLoss">0</span></p>
-		<p>Extra Burn Speed Multiplier: <span id="burnHarderGain">1</span></p>
+		<p>Extra Burn Multiplier: <span id="burnHarderGain">1</span></p>
 		<p>Faster Climb Multiplier: <span id="climbGain">1</span></p>
 		<p>Faster Dive Multiplier: <span id="diveGain">1</span></p>
 		<p>Points: <span id="distancePoints">meow</span></p>
@@ -450,18 +448,30 @@
 		//Unlocking upgrades
 		let unlockCost = 100;
 		const unlockCostIncrement = 4;
+		const upgradesContainer = document.querySelector('.upgradeButtons');
+		const newUpgradeContainer = document.getElementById('newUpgradeContainer');
 		let availableUpgrades = [
-    	{ id: 1, name: 'Passive Speed', costElem: 'passiveCost', upgradeFn: () => upgradeStat(1, 0.05) },
-    	{ id: 2, name: 'Burn Speed', costElem: 'burnCost', upgradeFn: () => upgradeStat(2, 0.05) },
-    	{ id: 3, name: 'Focus Regen', costElem: 'regenCost', upgradeFn: () => upgradeStat(3, 0.1) },
-    	{ id: 4, name: 'Focus Efficiency', costElem: 'efficiencyCost', upgradeFn: () => upgradeStat(4, 0.1) },
-    	{ id: 5, name: 'Max Focus', costElem: 'maxfocusCost', upgradeFn: () => upgradeStat(5, 10) },
-    	{ id: 6, name: 'Burn Harder', costElem: 'burnharderCost', upgradeFn: () => upgradeStat(6, 0.1) },
-    	{ id: 7, name: 'Climb Rate', costElem: 'climbCost', upgradeFn: () => upgradeStat(7, 0.2) },
-    	{ id: 8, name: 'Dive Rate', costElem: 'diveCost', upgradeFn: () => upgradeStat(8, 0.2) }
+    	{ id: 1, name: 'Passive Speed', cost: 100, upgradeFn: () => upgradeStat(1, 0.05) },
+    	{ id: 2, name: 'Burn Speed', cost: 100, upgradeFn: () => upgradeStat(2, 0.05) },
+    	{ id: 3, name: 'Focus Regen', cost: 100, upgradeFn: () => upgradeStat(3, 0.1) },
+    	{ id: 4, name: 'Focus Efficiency', cost: 100, upgradeFn: () => upgradeStat(4, 0.1) },
+    	{ id: 5, name: 'Max Focus', cost: 100, upgradeFn: () => upgradeStat(5, 10) },
+    	{ id: 6, name: 'Burn Harder', cost: 100, upgradeFn: () => upgradeStat(6, 0.1) },
+    	{ id: 7, name: 'Climb Rate', cost: 100, upgradeFn: () => upgradeStat(7, 0.2) },
+    	{ id: 8, name: 'Dive Rate', cost: 100, upgradeFn: () => upgradeStat(8, 0.2) }
 		];
+		
+		//Starting costs of upgrades
+		let passiveCost = 100;
+		let burnspeedCost = 100;
+		let focusregenCost = 100;
+		let focusefficiencyCost = 100;
+		let maxfocusCost = 100;
+		let burnharderCost = 100;
+		let climbCost = 100;
+		let diveCost = 100;
 
-		//Upgrades
+		//Base stats that will be upgraded
 		var speedPassive = 1;
 		var burnspeedMulti = 1; //How much faster you go while burning
 		var focusRegen = 1; //How much faster you restore focus
@@ -470,16 +480,6 @@
 		var burnHarder = 1;
 		var climbRate = 1;
 		var diveRate = 1;
-
-		//Upgrade costs
-		var passiveCost = 100;
-		var burnspeedCost = 100;
-		var focusregenCost = 100;
-		var focusefficiencyCost = 100;
-		var maxfocusCost = 100;
-		var burnharderCost = 100;
-		var climbCost = 100;
-		var diveCost = 100;
 
 		var backgroundRed = 0;
 		var backgroundBlue = 0;
@@ -492,22 +492,6 @@
 		let yoff = 0;
 		const target = document.getElementById("target");
 		const noise = new SimplexNoise();
-
-		//Points and stuff related to upgrades
-		var score = 0;
-		var scoreDisplay = score;
-
-		//Stuff about getting random upgrades, and the value of each upgrade
-		const upgrades = [
-        { id: 1, name: "Passive Speed", costElement: "passiveCost", cost: 100, increment: 0.05 },
-        { id: 2, name: "Burn Speed", costElement: "burnCost", cost: 100, increment: 0.05 },
-        { id: 3, name: "Focus Regen", costElement: "regenCost", cost: 100, increment: 0.1 },
-        { id: 4, name: "Focus Efficiency", costElement: "efficiencyCost", cost: 100, increment: 0.1 },
-        { id: 5, name: "Max Focus", costElement: "maxfocusCost", cost: 100, increment: 10 },
-        { id: 6, name: "Burn Harder", costElement: "burnharderCost", cost: 100, increment: 0.1 },
-        { id: 7, name: "Climb Rate", costElement: "climbCost", cost: 100, increment: 0.2 },
-        { id: 8, name: "Dive Rate", costElement: "diveCost", cost: 100, increment: 0.2 }
-    ];
 
 
 
@@ -673,93 +657,99 @@
 			updateVantageAnimation()
 		}
 
+		//Function to handle unlocking upgrades
+		function unlockUpgrade() {
+			if (distancePoints >= unlockCost && availableUpgrades.length > 0) {
+				distancePoints -= unlockCost; //Spend points
+				unlockCost *= unlockCostIncrement; //Increases cost
 
+				const randomIndex = Math.floor(Math.random() * availableUpgrades.length);
+				const selectedUpgrade = availableUpgrades[randomIndex];
 
-		//Improves stats with game-progression upgrade buttons
-		//TODO - Turn the purchasing into a function of its own, maybe?
-		function upgradeStat(variableNumber, increment) {
-			switch (variableNumber) {
+				availableUpgrades.splice(randomIndex, 1);
+
+				//Create and show the new upgrade button
+				createUpgradeButton(selectedUpgrade);
+				//Update the cost
+				document.getElementById('buyUpgradeBtn').innerText = `Buy an Upgrade: ${unlockCost}`;
+			} else{
+				console.log("Not enough points or out of options!!");
+			}
+		};
+
+		function createUpgradeButton(upgrade) {
+			const upgradeButton = document.createElement('button');
+			upgradeButton.classList.add('upgrade-button', 'btn');
+			upgradeButton.innerText = `${upgrade.name}: ${upgrade.cost}`;
+
+			upgradeButton.onclick = function() {
+				if (distancePoints >= upgrade.cost) {
+					distancePoints -= upgrade.cost; // Spend the cost
+					upgrade.upgradeFn(); // Call the upgrade function
+					upgrade.cost = Math.floor(upgrade.cost * 1.15); // Increase cost
+					upgradeButton.innerText = `${upgrade.name}: ${upgrade.cost}`; // Update displayed cost
+				} else {
+					console.log("Not enough distance points for this upgrade!");
+				}
+			};
+
+			// Insert the new button at the top of the container
+			newUpgradeContainer.insertBefore(upgradeButton, newUpgradeContainer.firstChild);
+    		// Add a line break after the new button
+    		newUpgradeContainer.insertBefore(document.createElement('br'), upgradeButton.nextSibling);
+		}
+
+		// Event listener for the Buy an Upgrade button
+		document.getElementById('buyUpgradeBtn').addEventListener('click', unlockUpgrade);
+
+		//Function for upgrading stats
+		// Upgrade function to handle upgrading stats
+		function upgradeStat(id, value) {
+			switch (id) {
 				case 1:
-					if (distancePoints >= passiveCost) {
-						speedPassive += increment;
-						document.getElementById("speedMulti").innerHTML = speedPassive.toFixed(2);
-						distancePoints = distancePoints - passiveCost;
-						passiveCost = passiveCost * 1.25;
-						document.getElementById("passiveCost").innerHTML = passiveCost.toFixed(0);
-					}
+					speedPassive = parseFloat((speedPassive + value).toFixed(2));
+					console.log(`Passive Speed increased by ${value}, now: ${speedPassive}`);
 					break;
 				case 2:
-					if (distancePoints >= burnspeedCost) {
-						burnspeedMulti += increment;
-						document.getElementById("burnspeedMulti").innerHTML = burnspeedMulti.toFixed(2);
-						distancePoints = distancePoints - burnspeedCost;
-						burnspeedCost = burnspeedCost * 1.25;
-						document.getElementById("burnCost").innerHTML = burnspeedCost.toFixed(0);
-					}
+					burnspeedMulti = parseFloat((burnspeedMulti + value).toFixed(2));
+					document.getElementById('burnspeedMulti').innerText = burnspeedMulti; // Update the span
+					console.log(`Burn Speed increased by ${value}, now: ${burnspeedMulti}`);
 					break;
 				case 3:
-					if (distancePoints >= focusregenCost) {
-						focusRegen += increment;
-						document.getElementById("focusRegen").innerHTML = focusRegen.toFixed(2);
-						distancePoints = distancePoints - focusregenCost;
-						focusregenCost = focusregenCost * 1.25;
-						document.getElementById("regenCost").innerHTML = focusregenCost.toFixed(0);
-					}
+					focusRegen = parseFloat((focusRegen + value).toFixed(2));
+					document.getElementById('focusRegen').innerText = focusRegen; // Update the span
+					console.log(`Focus Regen increased by ${value}, now: ${focusRegen}`);
 					break;
 				case 4:
-					if (distancePoints >= focusefficiencyCost) {
-						focusEfficiency += increment;
-						document.getElementById("focusEfficiency").innerHTML = focusEfficiency.toFixed(2);
-						distancePoints = distancePoints - focusefficiencyCost;
-						focusefficiencyCost = focusefficiencyCost * 1.25;
-						document.getElementById("efficiencyCost").innerHTML = focusefficiencyCost.toFixed(0);
-					}
+					focusEfficiency = parseFloat((focusEfficiency + value).toFixed(2));
+					document.getElementById('focusEfficiency').innerText = focusEfficiency; // Update the span
+					console.log(`Focus Efficiency increased by ${value}, now: ${focusEfficiency}`);
 					break;
 				case 5:
-					if (distancePoints >= maxfocusCost) {
-						maxFocus += increment;
-						extraFocus += increment;
-						document.getElementById("extraFocus").innerHTML = extraFocus.toFixed(0);
-						distancePoints = distancePoints - maxfocusCost;
-						maxfocusCost = maxfocusCost * 1.25;
-						document.getElementById("maxfocusCost").innerHTML = maxfocusCost.toFixed(0);
-					}
+					extraFocus = parseFloat((extraFocus + value).toFixed(2));
+					document.getElementById('extraFocus').innerText = extraFocus; // Update the span
+					console.log(`Max Focus increased by ${value}, now: ${extraFocus}`);
 					break;
 				case 6:
-					if (distancePoints >= burnharderCost) {
-						burnHarder += increment;
-						document.getElementById("burnHarderLoss").innerHTML = (1 - burnHarder).toFixed(1);
-						document.getElementById("burnHarderGain").innerHTML = burnHarder.toFixed(2);
-						distancePoints = distancePoints - burnharderCost;
-						burnharderCost = burnharderCost * 1.25;
-						document.getElementById("burnharderCost").innerHTML = burnharderCost.toFixed(0);
-					}
+					burnHarder = parseFloat((burnHarder + value).toFixed(2));
+					document.getElementById('burnHarderGain').innerText = burnHarder; // Update the span
+					console.log(`Burn Harder increased by ${value}, now: ${burnHarder}`);
 					break;
-
 				case 7:
-					if (distancePoints >= climbCost) {
-						climbRate += increment;
-						document.getElementById("climbGain").innerHTML = climbRate.toFixed(1);
-						distancePoints = distancePoints - climbCost;
-						climbCost = climbCost * 1.25;
-						document.getElementById("climbCost").innerHTML = climbCost.toFixed(0);
-					}
+					climbRate = parseFloat((climbRate + value).toFixed(2));
+					document.getElementById('climbGain').innerText = climbRate; // Update the span
+					console.log(`Climb Rate increased by ${value}, now: ${climbRate}`);
 					break;
-
 				case 8:
-					if (distancePoints >= diveCost) {
-						diveRate += increment;
-						document.getElementById("diveGain").innerHTML = diveRate.toFixed(1);
-						distancePoints = distancePoints - diveCost;
-						diveCost = diveCost * 1.25;
-						document.getElementById("diveCost").innerHTML = diveCost.toFixed(0);
-					}
+					diveRate = parseFloat((diveRate + value).toFixed(2));
+					document.getElementById('diveGain').innerText = diveRate; // Update the span
+					console.log(`Dive Rate increased by ${value}, now: ${diveRate}`);
 					break;
 				default:
-					console.error("Invalid upgrade number");
+					console.log("Invalid upgrade ID");
 			}
-			console.log("Upgraded " + increment);
 		}
+
 
 		//Coracode for target swaying
 		setInterval(() => {
