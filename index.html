@@ -60,13 +60,11 @@
         z-index: 20;
         margin-bottom: 0px;
         margin-top: 0px;
-		width: 200px;
 		white-space: nowrap;
     }
 
 	.upgrade-button {
 		animation: slideIn 0.5s forwards;
-		margin: 0px 0;
 		position: relative;
 		transform: translateX(100%); /*Start offscreen*/
 		right: 0;
@@ -364,9 +362,6 @@
 				Focus: <span id="focusDisplay">100</span>%
 			</p>
 			<p>
-				Vantage: <span id="vantageDisplay">0</span>
-			</p>
-			<p>
 				Current Action: <span id="actionDisplay">Focusing...</span>
 			</p>
 			<p>
@@ -387,11 +382,12 @@
 
 		<div class="upgradeButtons">
 			<div id="newUpgradeContainer"></div> 
-		    <button id="buyUpgradeBtn" class="btn">Buy an Upgrade: 100</button>
+		    <button id="buyUpgradeBtn" class="btn">Unlock Random Upgrade: 100</button>
 		</div>
 
 		<div style="position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%); color: white; font-size: 14px; text-align: center; white-space: nowrap; font-family: 'Fira Code', monospace;">
-			v0.06: Random Upgrade System
+			v0.06.1: Random Upgrade System Organized, Stats Rebalanced<br>
+			Max Focus fixed, Focus Regen lowered/fixed, Max Vantage increased
 		</div>
 	</div>
 
@@ -424,7 +420,7 @@
 		var distance = startingDistance;
 		var distanceDisplay = distance;
 
-		var distancePoints = 0;
+		var distancePoints = 1000000;
 		var pointDisplay = 0;
 		var metaDisplay = 0;
 		var distanceMeta = 0;
@@ -436,7 +432,7 @@
 
 		var vantage = 0;
 		var vantageGain = 0;
-		var maxVantage = 300;
+		var maxVantage = 10000;
 
 		var action = 0;
 		var actionDisplay;
@@ -447,7 +443,7 @@
 
 		//Unlocking upgrades
 		let unlockCost = 100;
-		const unlockCostIncrement = 4;
+		const unlockCostIncrement = 3;
 		const upgradesContainer = document.querySelector('.upgradeButtons');
 		const newUpgradeContainer = document.getElementById('newUpgradeContainer');
 		let availableUpgrades = [
@@ -474,7 +470,7 @@
 		//Base stats that will be upgraded
 		var speedPassive = 1;
 		var burnspeedMulti = 1; //How much faster you go while burning
-		var focusRegen = 1; //How much faster you restore focus
+		var focusRegen = 0; //How much faster you restore focus
 		var focusEfficiency = 1; //How much less focus you lose
 		var extraFocus = 0;
 		var burnHarder = 1;
@@ -520,7 +516,6 @@
 
 			//Time passing! 50 ticks per second, currently
 			gameInterval = setInterval(function () {
-
 				//Checks if distance is 0 and ends game
 				if (distance <= 0) {
 					gameWin();
@@ -534,8 +529,8 @@
 				switch (action) {
 					case 0:
 						//Devote
-						speedMulti = 1 * speedPassive;
-						focusGain = .8 + focusRegen;
+						speedMulti = 1.3 * speedPassive; //Increasing the speed here a little to 1.3x
+						focusGain = .5 + focusRegen;
 						vantageGain = 0;
 						document.getElementById("actionDisplay").innerHTML = "Focusing...";
 						break;
@@ -543,8 +538,7 @@
 					case 1:
 						//Burn
 						speedMulti = 3.1 * burnspeedMulti * speedPassive * burnHarder; //The .1 is to offset it so the singles numbers are a bit more random
-						//focusGain = -0.3; //total -.5 focus per tick - this is the normal speed, edited out for logic
-						focusGain = (-0.3 + (1 - burnHarder)) / focusEfficiency;
+						focusGain = (-0.5 + (1 - burnHarder)) / focusEfficiency; //How fast we lose focus
 						if (vantage > 0) {
 							speedMulti = speedMulti * 2 * diveRate;
 							vantageGain = -2 * diveRate;
@@ -555,7 +549,7 @@
 					case 2:
 						//Climb
 						speedMulti = 0.85 * speedPassive; //The .5 is to offset it so the singles number are a bit more random
-						focusGain = 0.2; //Neutral love
+						focusGain = 0;
 						vantageGain = 1 * climbRate;
 						document.getElementById("actionDisplay").innerHTML = "Climbing...";
 						break;
@@ -563,8 +557,8 @@
 					case 3:
 						//Obsess, cheat button
 						speedMulti = 300.5; //The .5 is to offset it so the singles number are a bit more random
-						focusGain = 0.2; //Neutral love
-						vantageGain = 10;
+						focusGain = 0; //Neutral love
+						vantageGain = 100;
 						document.getElementById("actionDisplay").innerHTML = "Falling Deeper In Love...";
 						break;
 
@@ -576,11 +570,11 @@
 				//The { here is just to make things a little snugger and enable minimizing this block.
 				{	//Base stats movin'
 					distance = distance - (1 * speedMulti);
-					focus = focus - 0.2 + focusGain;
+					focus = focus + focusGain; //Changing this to make neutral focus 0
 					vantage = vantage + vantageGain;
 
 					//clamps focus between 0 and the max upgraded focus
-					focus = Math.max(0, Math.min(focus, maxFocus));
+					focus = Math.max(0, Math.min(focus, maxFocus+extraFocus));
 
 					//sets minimum distance to 0
 					distance = distance < 0 ? distance = 0 : distance;
@@ -603,7 +597,6 @@
 					distanceDisplay = Math.round(distance); //Converts distance (decimals, ew!) to decimalless version
 					distanceDisplay = distanceDisplay.toLocaleString(); //Adds thousands separators
 					document.getElementById("distanceDisplay").innerHTML = distanceDisplay; //Updates distance
-					document.getElementById("vantageDisplay").innerHTML = Math.round(vantage);
 					document.getElementById("speedperSecond").innerHTML = Math.round(distanceGain * 20);
 
 					if (vantage > maxVantage) vantage = maxVantage; //Caps max vantage
@@ -671,7 +664,7 @@
 				//Create and show the new upgrade button
 				createUpgradeButton(selectedUpgrade);
 				//Update the cost
-				document.getElementById('buyUpgradeBtn').innerText = `Buy an Upgrade: ${unlockCost}`;
+				document.getElementById('buyUpgradeBtn').innerText = `Unlock Random Upgrade: ${unlockCost}`;
 			} else{
 				console.log("Not enough points or out of options!!");
 			}
